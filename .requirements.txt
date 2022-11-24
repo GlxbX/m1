@@ -1,1 +1,4 @@
 selenium
+matplotlib
+beautifulsoup4
+lxml
