@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 import sqlite3
-from parsing import Database
+from DB import Database
 
 
 ID = 346
@@ -15,7 +15,9 @@ class Chart:
         db.connect()
         df = pd.read_sql_query("SELECT price, dt from item{}".format(ID), db.con)
         plt.plot(df['dt'], df['price'], color='red', marker='o')
-        plt.title( "title" , fontsize=14)
+       
+        title = db.get_item_name_by_id(ID)
+        plt.title( title , fontsize=14)
         plt.xticks(rotation=30, ha='right')
         plt.xlabel('Time', fontsize=10)
         plt.ylabel('Price', fontsize=14)
