@@ -12,13 +12,19 @@ from multiprocessing import Pool
 
 class Scanner:
     def __init__(self,log,pas, item_id,trade = False):
-        self.trade = trade
+
+        #подключение базы данных
         self.db = Database()
+
+        #параметры сканера
+        self.trade = trade 
         self.log = log 
         self.pas = pas
         self.id = item_id
         self.buy_limit = 5.61
         self.wanted_profit_percent = 2 
+
+        #настройки webdriver
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36")
         self.options.add_argument("--disable-blink-features=AutomationControlled")
@@ -30,22 +36,34 @@ class Scanner:
         self.driver = webdriver.Chrome(service=self.service, options=self.options)
         self.url = "https://monopoly-one.com/market/thing/{}".format(self.id)
 
+    #получение цены для продажи с учетом комиссии тп и желаемой прибыли
     def get_sell_price(self, buy_price):
         return round(((buy_price/(85-self.wanted_profit_percent))*100),2)
 
+    #скрипт покупки item
     def buy(self,price, b_time):
+        #нажать кнопку купить
         self.driver.find_element(By.CLASS_NAME, "button.button-small.button-grass").click()
         time.sleep(1)
 
+        #нажать кнопку подтверждения купить
         self.driver.find_element(By.CLASS_NAME, "btn.btn-small.btn-error").click()
         time.sleep(1)
 
+        #получить подтверждение покупки
+
+        ########### - доделать
+
+        #обновить страницу
         self.driver.refresh()
 
+        #получить желаемуе цену продажи
         listed_price = self.get_sell_price(price)
 
+        #записать транзакцию в бд
         self.db.add_new_transaction(self.id, price, b_time, listed_price)
 
+    #скрипт продажи item
     def sell(self, t_id, sell_price):
         #открыть отдельную вкладку - ссылка https://monopoly-one.com/inventory
         inv_url = "https://monopoly-one.com/inventory"
@@ -87,47 +105,67 @@ class Scanner:
 
         #закрыть вкладку
         self.driver.close()
+
         #вернуть на прошлую вкладку
         self.driver.switch_to.window(self.driver.window_handles[0])
 
+    #аутентификация
     def authentificate(self):
+        #страница аутентификациИ
         self.driver.get(url='https://monopoly-one.com/auth')
         time.sleep(5)
 
+        #логгин
         log_input = self.driver.find_element(By.ID, "auth-form-email")
         log_input.clear()
         log_input.send_keys(self.log)
         time.sleep(5)
 
+        #пароль
         pas_input = self.driver.find_element(By.ID, "auth-form-password")
         pas_input.clear()
         pas_input.send_keys(self.pas)
         time.sleep(3)
 
+        #кнопка submit
         login_button = self.driver.find_element(By.CLASS_NAME  , "btn-ok").click()
         time.sleep(5)
         
-
+    #запуск сканера
     def run(self, minutes):
-        
+        #подключение к базе данных
         self.db.connect()
+
+        #создание таблицы движения цены item (если не была создана)
         self.db.create_new_item_table(self.id)
+
+        #аутентификация
         self.authentificate()
 
+        #запуск
         try:
+
             last_price = 0 
             ITEM_NAME = self.db.get_item_name_by_id(self.id)
-         
+
+            #подключение к странице item
             self.driver.get(url=self.url)
             time.sleep(5)
 
+            #основной цикл 
             for i in range(minutes*12):
+
+                #получение данных со страницы
                 source_data = self.driver.page_source
                 soup = bs(source_data, "lxml")
 
+                #получение данных предмета - первого в очереди на продажу
                 min_listing_id, min_listing_price = self.db.get_min_listing_price(self.id)
                 
+                #текущая цена
                 curr_price = soup.find("div", class_ = "marketThing-price")
+
+                #цикл на случай неполадок (временно, позже ожидания будут убраны)
                 while curr_price == None:
                     print("Error")
                     self.driver.refresh()
@@ -137,50 +175,66 @@ class Scanner:
                     curr_price = soup.find("div", class_ = "marketThing-price")
 
                 curr_price = float(curr_price.text[:-3])
+
+                #текущее время
                 now = datetime.now()
                 now = datetime.strftime(now, "%d/%m/%Y %H:%M:%S")
 
+                #блок торговых операций
                 if self.trade == True:
-                    #buy if price is below limit 
+
+                    #закупка item если цена ниже лимита 
                     if curr_price<self.buy_limit:
                         self.buy(curr_price, now)
                         print("---------------- [{}] +1 Item -------".format(ITEM_NAME))
                         time.sleep(2)
 
-                    #sell if price is above limit
+                    #продажа item при цене выше лимита
                     if curr_price>min_listing_price:
                         sell_price = min_listing_price
 
+                        #повышение цены продажи при имеющейся возможности
                         if curr_price-min_listing_price>0.01:
                             sell_price = curr_price-0.02
+                            #обновление данных транзакции в бд
                             self.db.update_listing_price(min_listing_id, sell_price)
 
+                        #обновление очереди предметов на продажу
                         self.sell(min_listing_id, sell_price)
                         print("---------------- [{}] Listed 1 item ".format(ITEM_NAME))
                         time.sleep(2)
                           
+                #блок сканирования цены
+                #первыя итерация       
                 if last_price == 0:
                     last_price = curr_price
 
-
-                else:
-                    if curr_price<=last_price:
-                        if curr_price<last_price:
-                            print("---------------- [{}] Price decreased {} --> {}".format(ITEM_NAME,last_price, curr_price))
+                else:   
+                    #понижение цены
+                    if curr_price<last_price:
+                        print("---------------- [{}] Price decreased {} --> {}".format(ITEM_NAME,last_price, curr_price))
                         last_price = curr_price
+
+                    #нет изменений  
+                    elif curr_price==last_price:
+                        last_price = curr_price
+
+                    #повышение цены
                     else:
                         print("---------------- [{}] Price increased {} --> {}".format(ITEM_NAME,last_price, curr_price))
-                       
+
+                        #обновление данных в транзакциях о проданых предметах 
                         num_of_sold_items = self.db.update_sold_items(curr_price, self.id)
                         if num_of_sold_items>0:
                                 print("---------------- [{}] SOLD {} items".format(ITEM_NAME, num_of_sold_items))
+
+                        #добавление информации о цене последней продажи в таблицу движения цены
                         self.db.insert_new_data(last_price, now, self.id)
                         last_price = curr_price
   
                 self.driver.refresh()
                 time.sleep(5) 
                 print("[{}] Scanning.... {}".format(ITEM_NAME,i))
-
 
             self.db.commit_and_close()
             title = soup.find("div", class_ = "marketListing-info-header-title").text
@@ -208,7 +262,3 @@ if __name__ == "__main__":
 
     p = Pool(processes=2)
     p.map(just_scan, ids)
-
-
-
-  
