@@ -11,7 +11,9 @@ class Database:
         self.con = sqlite3.connect(self.database,isolation_level=None)
         self.cur = self.con.cursor()
         
-    
+    def get_buy_price_limit(self,i_id):
+        return self.cur.execute("""SELECT item_wanted_buy_price from items_info WHERE item_id = {};""".format(i_id)).fetchone()[0]
+
     def create_new_item_table(self, id):
         self.cur.execute("CREATE TABLE IF NOT EXISTS item{} (price FLOAT, dt DATETIME)".format(id))
 

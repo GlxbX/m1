@@ -21,7 +21,7 @@ class Scanner:
         self.log = log 
         self.pas = pas
         self.id = item_id
-        self.buy_limit = 5.61
+        self.buy_limit = 99999
         self.wanted_profit_percent = 2 
 
         #настройки webdriver
@@ -48,20 +48,22 @@ class Scanner:
 
         #нажать кнопку подтверждения купить
         self.driver.find_element(By.CLASS_NAME, "btn.btn-small.btn-error").click()
-        time.sleep(1)
+        time.sleep(2)
 
         #получить подтверждение покупки
-
-        ########### - доделать
+        success = False
+        if self.driver.find_element(By.CLASS_NAME, "dialog-box-title").text() == "Покупка совершена!":
+            success = True
 
         #обновить страницу
         self.driver.refresh()
 
-        #получить желаемуе цену продажи
-        listed_price = self.get_sell_price(price)
+        if success == True:
+            #получить желаемуе цену продажи
+            listed_price = self.get_sell_price(price)
 
-        #записать транзакцию в бд
-        self.db.add_new_transaction(self.id, price, b_time, listed_price)
+            #записать транзакцию в бд
+            self.db.add_new_transaction(self.id, price, b_time, listed_price)
 
     #скрипт продажи item
     def sell(self, t_id, sell_price):
@@ -139,6 +141,9 @@ class Scanner:
         #создание таблицы движения цены item (если не была создана)
         self.db.create_new_item_table(self.id)
 
+        #получение лимита цены закупки
+        self.buy_limit = self.db.get_buy_price_limit(self.id)
+
         #аутентификация
         self.authentificate()
 
@@ -186,7 +191,7 @@ class Scanner:
                     #закупка item если цена ниже лимита 
                     if curr_price<self.buy_limit:
                         self.buy(curr_price, now)
-                        print("---------------- [{}] +1 Item -------".format(ITEM_NAME))
+                        print("---------------- [{}] +1 Item for {} -------".format(ITEM_NAME, curr_price))
                         time.sleep(2)
 
                     #продажа item при цене выше лимита
@@ -201,7 +206,7 @@ class Scanner:
 
                         #обновление очереди предметов на продажу
                         self.sell(min_listing_id, sell_price)
-                        print("---------------- [{}] Listed 1 item ".format(ITEM_NAME))
+                        print("---------------- [{}] Listed 1 item for {}".format(ITEM_NAME, sell_price))
                         time.sleep(2)
                           
                 #блок сканирования цены
@@ -226,21 +231,21 @@ class Scanner:
                         #обновление данных в транзакциях о проданых предметах 
                         num_of_sold_items = self.db.update_sold_items(curr_price, self.id)
                         if num_of_sold_items>0:
-                                print("---------------- [{}] SOLD {} items".format(ITEM_NAME, num_of_sold_items))
+                                print("---------------- [{}] SOLD {} items for {}".format(ITEM_NAME, num_of_sold_items, curr_price))
 
                         #добавление информации о цене последней продажи в таблицу движения цены
                         self.db.insert_new_data(last_price, now, self.id)
                         last_price = curr_price
   
                 self.driver.refresh()
-                time.sleep(5) 
+                time.sleep(10) 
                 print("[{}] Scanning.... {}".format(ITEM_NAME,i))
 
             self.db.commit_and_close()
             title = soup.find("div", class_ = "marketListing-info-header-title").text
 
         except Exception as ex:
-            print(ex)
+            print(ex, "try_cycle_err")
 
         finally:
             self.driver.close()
@@ -249,7 +254,7 @@ class Scanner:
 
 def just_scan(item_id):
     scanner = Scanner(log, pas, item_id)
-    scanner.run(100)
+    scanner.run(10000)
 
 def scan_and_trade(item_id):
     scanner = Scanner(log, pas, item_id, trade=True)
@@ -257,8 +262,14 @@ def scan_and_trade(item_id):
 
 
 
-if __name__ == "__main__":
-    ids = [345,346]
 
-    p = Pool(processes=2)
-    p.map(just_scan, ids)
+
+if __name__ == "__main__":
+    ids = [8,344,345,346]
+
+    p = Pool(processes=4)
+    p.map(scan_and_trade, ids)
+
+      
+# <span class = formatter>
+# <span> Выполнить это действие невозможно из-за установленных лимитов. <span>
