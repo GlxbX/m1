@@ -31,7 +31,7 @@ class Scanner:
         self.options.add_argument("--disable-software-rasterizer")
         self.options.add_argument("--disable-gpu")
         self.options.add_experimental_option("excludeSwitches", ['enable-logging'])
-        self.options.headless = False
+        self.options.headless = True
         self.service = Service("D:\Worktable\Izmaylov\Staff\Python\m1project\chromedriver")
         self.driver = webdriver.Chrome(service=self.service, options=self.options)
         self.url = "https://monopoly-one.com/market/thing/{}".format(self.id)
@@ -48,12 +48,14 @@ class Scanner:
 
         #нажать кнопку подтверждения купить
         self.driver.find_element(By.CLASS_NAME, "btn.btn-small.btn-error").click()
-        time.sleep(2)
+        time.sleep(5)
 
+
+        # print(self.driver.find_element(By.CLASS_NAME, "dialog-box-title").text())
         #получить подтверждение покупки
-        success = False
-        if self.driver.find_element(By.CLASS_NAME, "dialog-box-title").text() == "Покупка совершена!":
-            success = True
+        success = True
+        # if self.driver.find_element(By.CLASS_NAME, "dialog-box-title").text() == "Покупка совершена!":
+        #     success = True
 
         #обновить страницу
         self.driver.refresh()
@@ -265,11 +267,12 @@ def scan_and_trade(item_id):
 
 
 if __name__ == "__main__":
-    ids = [8,344,345,346]
+    ids = [344,345,346]
 
-    p = Pool(processes=4)
+    p = Pool(processes=3)
     p.map(scan_and_trade, ids)
 
       
 # <span class = formatter>
 # <span> Выполнить это действие невозможно из-за установленных лимитов. <span>
+#баг после покупки
