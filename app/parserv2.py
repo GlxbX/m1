@@ -145,17 +145,15 @@ class Scanner:
 
                     a = i.find("div", class_ ="marketThing-price").text[3:-9]
                     
-                    if len(a)>6:
-                        print(len(a))
-                        a = a[:len(a)-6]+a[len(a)-5:]
-                            
+                    print(''.join(a.split(' ')))
+                    print(a.replace("\u2009", ""))
+                    a = a.replace("\u2009", "")
                     
-
 
                     price = float(a)
                     wanted_price = self.db.get_buy_price_limit(item_id)
                   
-                    print(item_id," curr= ", price," want- ", wanted_price)
+                    # print(item_id," curr= ", price," want- ", wanted_price)
 
                     
 
