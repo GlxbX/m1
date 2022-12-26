@@ -11,7 +11,6 @@ from DB import Database
 from secure_data import log, pas
 from multiprocessing import Pool
 
-
 class Scanner:
     def __init__(self,log,pas):
 
@@ -48,16 +47,8 @@ class Scanner:
         element_present = EC.presence_of_element_located((By.CLASS_NAME, 'marketThing-price'))
         WebDriverWait(self.driver, 10).until(element_present)
         
-
         pr = self.driver.find_element(By.CLASS_NAME,"marketThing-price").text[:-3]
-    
         curr_price = float(pr)
-
-        # source_data = self.driver.page_source
-        # soup = bs(source_data, "lxml")
-
-        # curr_price = soup.find("div", class_ = "marketThing-price")
-        # curr_price = float(curr_price.text[:-3])
 
         while curr_price<=price:
             #нажать кнопку купить
@@ -66,14 +57,12 @@ class Scanner:
             element_present = EC.presence_of_element_located((By.CLASS_NAME, 'btn.btn-small.btn-error'))
             WebDriverWait(self.driver, 10).until(element_present)
            
-
             #нажать кнопку подтверждения купить
             self.driver.find_element(By.CLASS_NAME, "btn.btn-small.btn-error").click()
             self.balance-=price
+            print("------------------------------------ Bought", id, price)
             
             time.sleep(1)
-
-
             self.driver.refresh()
 
             element_present = EC.presence_of_element_located((By.CLASS_NAME, 'marketThing-price'))
@@ -83,12 +72,10 @@ class Scanner:
             curr_price = float(pr)
             time.sleep(1)
             
-       
         self.driver.close()
         self.driver.switch_to.window(self.driver.window_handles[0])
         time.sleep(1)
       
-   
     #аутентификация
     def authentificate(self):
         #страница аутентификациИ
@@ -111,7 +98,6 @@ class Scanner:
         login_button = self.driver.find_element(By.CLASS_NAME  , "btn-ok").click()
         time.sleep(5)
         
-
     #запуск сканера
     def run(self):
         #подключение к базе данных
@@ -127,43 +113,36 @@ class Scanner:
             time.sleep(5)
             
             while True:
-                
                 element_present = EC.presence_of_element_located((By.CLASS_NAME, 'list-one.marketThing'))
                 WebDriverWait(self.driver, 10).until(element_present)
 
                 self.balance = float(self.driver.find_element(By.CLASS_NAME, 'market-balance-sum').text[:-3])
-
                 source_data = self.driver.page_source
-                self.driver.refresh()
-
+                
                 soup = bs(source_data, "lxml")
                 item_list = soup.find_all("a", class_="list-one marketThing")
                 
                 for i in item_list[:3]:
                     item_id = int(i.get('href')[14:])
 
-
                     a = i.find("div", class_ ="marketThing-price").text[3:-9]
                     
-                    print(''.join(a.split(' ')))
-                    print(a.replace("\u2009", ""))
-                    a = a.replace("\u2009", "")
-                    
-
+                    l = a.replace('\u2009', '')
+                    a = l
+                           
                     price = float(a)
                     wanted_price = self.db.get_buy_price_limit(item_id)
-                  
+            
                     # print(item_id," curr= ", price," want- ", wanted_price)
-
-                    
-
+                
                     if self.balance>price:
                         if price <= wanted_price:
-                            print("------------------------------------ Bought", item_id, price)
+                            
                             self.buy(item_id,price)
 
                 # self.driver.refresh()
-                time.sleep(1) 
+               
+                self.driver.refresh()
 
         except Exception as ex:
             print(ex, "try_cycle_err")
