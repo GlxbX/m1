@@ -5,11 +5,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup as bs
 import time
-from datetime import datetime
-import pandas as pd 
-from DB import Database 
-from secure_data import log, pas
-from multiprocessing import Pool
+
+
+from .DB import Database 
+
+# from multiprocessing import Pool
 
 class Scanner:
     def __init__(self,log,pas):
@@ -114,7 +114,7 @@ class Scanner:
             
             while True:
                 element_present = EC.presence_of_element_located((By.CLASS_NAME, 'list-one.marketThing'))
-                WebDriverWait(self.driver, 10).until(element_present)
+                WebDriverWait(self.driver, 30).until(element_present)
 
                 self.balance = float(self.driver.find_element(By.CLASS_NAME, 'market-balance-sum').text[:-3])
                 source_data = self.driver.page_source
@@ -136,12 +136,12 @@ class Scanner:
                     # print(item_id," curr= ", price," want- ", wanted_price)
                 
                     if self.balance>price:
-                        if price <= wanted_price:
+                        if price <= wanted_price < 6:
                             
                             self.buy(item_id,price)
 
                 # self.driver.refresh()
-               
+                time.sleep(1)
                 self.driver.refresh()
 
         except Exception as ex:
