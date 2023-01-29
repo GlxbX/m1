@@ -117,8 +117,8 @@ class Scanner:
                 WebDriverWait(self.driver, 30).until(element_present)
 
                 self.balance = float(self.driver.find_element(By.CLASS_NAME, 'market-balance-sum').text[:-3])
+
                 source_data = self.driver.page_source
-                
                 soup = bs(source_data, "lxml")
                 item_list = soup.find_all("a", class_="list-one marketThing")
                 

@@ -1,13 +1,9 @@
-from app.marketScanner import Scanner
-
-
-
-
-
-
-
-
+from app.TradeBot import TradeBot
 
 if __name__ == "__main__":
-    scanner = Scanner()
-    scanner.run()
+    trader = TradeBot()
+    trader.run()
+
+    
+    
+    
