@@ -60,7 +60,6 @@ class BaseDB:
         
     def get_daily_prices(self,i_id, start_time):
         L = self.cur.execute("""SELECT price from item{} WHERE dt > '{}' """.format(i_id,start_time)).fetchall()
-        print('777')
         return [i[0] for i in L]
 
 
@@ -73,7 +72,8 @@ class BaseDB:
 
     def get_wanted_price(self,i_id):
         wp = self.cur.execute("""SELECT item_wanted_buy_price from items_info WHERE item_id = {}""".format(i_id)).fetchone()
-        return wp[0] if len(wp)>0 else -1
+        
+        return wp[0] if wp!= None else -1
 
 # class AnalyzerDB(BaseDatabase):
 #     def __init__(self):

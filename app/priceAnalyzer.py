@@ -8,7 +8,7 @@ class Analyzer:
         return now
     
 
-    def get_wanted_price(self,i_id):
+    def get_new_wanted_price(self,i_id):
         start_time = self.get_start_time()
            
         price_list = self.db.get_daily_prices(i_id, start_time)
@@ -41,7 +41,7 @@ class Analyzer:
         return wanted_price
 
     def update_items_info_wanted_price(self, item_id):
-        wanted_price = self.get_wanted_price(item_id)
+        wanted_price = self.get_new_wanted_price(item_id)
         self.db.update_wanted_price(item_id, wanted_price)
         return wanted_price
         

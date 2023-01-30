@@ -27,6 +27,7 @@ class TradeBot(Scanner,Analyzer, Buyer):
 
         #ID предметов для покупки
         self.items_for_trade = []
+        self.items_stoplist = [984]
 
         #настройки webdriver
         self.options = webdriver.ChromeOptions()
@@ -92,10 +93,19 @@ class TradeBot(Scanner,Analyzer, Buyer):
 
                     if last_checked_item != current_item:
 
-                        wanted_price = self.get_wanted_price(item_id)
-                        if price <= wanted_price and price <= self.balance:
-                            print("------------------------------------------Trying to buy ", item_name)
-                            self.buy(item_id, price)
+                        wanted_price = self.db.get_wanted_price(item_id)
+                        if price <= wanted_price and price <= self.balance/2:
+
+                            if item_id not in self.items_stoplist:
+                                print("Trying to buy ", item_id)
+                                try_to_buy = self.buy(item_id, price)
+                                if try_to_buy:
+                                    wanted_sell_price = round((wanted_price/90)*100, 2)
+                                    print("Bought", item_id, price, "- wanted sell price - ", wanted_sell_price)
+                                    print(" ")
+                                else:
+                                    print("Could not buy", item_id, price)
+                                    print(" ")
 
                         last_recorded_price = self.db.get_last_price(item_id)
                         if price != last_recorded_price:
