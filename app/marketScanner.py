@@ -10,11 +10,23 @@ from datetime import datetime
 
 
 class Scanner:
-    def get_current_market_listings(self):
+
+    def get_bf4_source(self):
         source_data = self.driver.page_source
         soup = bs(source_data, "lxml")
-        market_listings = soup.find("a", class_="list-one marketThing")
-        return market_listings
+        return soup
+
+    def get_last_listing(self,soup):
+        return soup.find("a", class_="list-one marketThing")
+
+    def get_balance(self, soup):
+        return float(soup.find("div", class_ = "market-balance-sum").text[:-3])
+
+    # def get_current_market_listings(self):
+    #     source_data = self.driver.page_source
+    #     soup = bs(source_data, "lxml")
+    #     market_listings = soup.find("a", class_="list-one marketThing")
+    #     return market_listings
 
     def get_item_id(self,listing):
         return int(listing.get('href')[14:]) 

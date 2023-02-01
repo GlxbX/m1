@@ -21,6 +21,7 @@ class BaseDB:
         self.con = None 
         self.cur = None
 
+    #common
     def connect(self):
         self.con = sqlite3.connect(self.database,isolation_level=None)
         self.cur = self.con.cursor()
@@ -30,7 +31,9 @@ class BaseDB:
         self.con.close()
         self.con = None 
         self.cur = None
-    
+
+
+
     def add_new_item(self,i_id,i_name):
         insertQuery = """INSERT INTO items_info VALUES (?, ?, ?);"""
         self.cur.execute(insertQuery, (i_id,i_name,0))
@@ -72,30 +75,8 @@ class BaseDB:
 
     def get_wanted_price(self,i_id):
         wp = self.cur.execute("""SELECT item_wanted_buy_price from items_info WHERE item_id = {}""".format(i_id)).fetchone()
-        
         return wp[0] if wp!= None else -1
 
-# class AnalyzerDB(BaseDatabase):
-#     def __init__(self):
-#         self.database = "GraphsData.sqlite"
-#         self.con = None 
-#         self.cur = None
-
-#     def get_daily_prices(self,i_id, start_time):
-#         L = self.cur.execute("""SELECT price from item{} WHERE dt > '{}' """.format(i_id,start_time)).fetchall()
-#         return [i[0] for i in L]
-
-#     def check_for_item_info(self,i_id):
-#         a = self.cur.execute("""SELECT count(*) from items_info WHERE item_id = {}""".format(i_id))
-#         return 0 if a == 0 else 1
-
-#     def update_wanted_price(self, i_id, price):
-#         if self.check_for_item_info(i_id) == 1:
-#             self.cur.execute("""UPDATE items_info SET item_wanted_buy_price = {} WHERE item_id = {};""".format(price, i_id))
-
-
-
-# a = Database()
-# a.connect()
-# price = a.get_last_price(36)
-# print(price)
+    def add_new_transaction(self, i_id, i_name, price, wsp):
+        insertQuery = """INSERT INTO transactions (item_id, item_name ,buy_price, wanted_sell_price) VALUES (?, ?, ?, ?);"""
+        self.cur.execute(insertQuery, (i_id,i_name,price,wsp))

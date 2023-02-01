@@ -11,8 +11,7 @@ class Buyer:
         success = False
 
         item_url = "https://monopoly-one.com/market/thing/{}".format(id)
-        # self.driver.execute_script("window.open('');")
-        # self.driver.switch_to.window(self.driver.window_handles[1])
+     
         self.driver.get(item_url)
 
         element_present = EC.presence_of_element_located((By.CLASS_NAME, 'marketThing-price'))
@@ -30,11 +29,11 @@ class Buyer:
            
             #нажать кнопку подтверждения купить
             self.driver.find_element(By.CLASS_NAME, "btn.btn-small.btn-error").click()
-            time.sleep(1)
+            time.sleep(2)
 
             #успех или ошибка
             window_after_buy = EC.presence_of_element_located((By.CLASS_NAME, "dialog-box-title"))
-            WebDriverWait(self.driver, 5).until(window_after_buy)
+            WebDriverWait(self.driver, 10).until(window_after_buy)
 
             message = self.driver.find_element(By.CLASS_NAME, "dialog-box-title").text
             print(message)
@@ -47,10 +46,10 @@ class Buyer:
             else:
                 print("------------------------------------ Buyer had an unknown error")
 
-        # self.driver.close()
-        # self.driver.switch_to.window(self.driver.window_handles[0])
+      
         self.driver.get(url=self.url)
         time.sleep(1)
+
         return success
 
 

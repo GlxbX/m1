@@ -27,7 +27,7 @@ class TradeBot(Scanner,Analyzer, Buyer):
 
         #ID предметов для покупки
         self.items_for_trade = []
-        self.items_stoplist = [984]
+        self.items_stoplist = [984, 942]
 
         #настройки webdriver
         self.options = webdriver.ChromeOptions()
@@ -77,57 +77,63 @@ class TradeBot(Scanner,Analyzer, Buyer):
 
             last_checked_item = [0,0]
             while True:
-                element_present = EC.presence_of_element_located((By.CLASS_NAME, 'list-one.marketThing'))
-                WebDriverWait(self.driver, 60).until(element_present)
+                soup = self.get_bf4_source()
 
-                self.balance = float(self.driver.find_element(By.CLASS_NAME, 'market-balance-sum').text[:-3])
+                self.driver.refresh()
 
-                market_listings = [self.get_current_market_listings()]
+                self.balance = self.get_balance(soup)
                 
-                for listing in market_listings:
-                    #Получаем id и цену
-                    item_id = self.get_item_id(listing)
-                    price = self.get_item_price(listing)
+                listing = self.get_last_listing(soup)
 
-                    current_item = [item_id, price]
+                #Получаем id и цену
+                item_id = self.get_item_id(listing)
+                price = self.get_item_price(listing)
+                item_name = self.get_item_name(listing)
 
-                    if last_checked_item != current_item:
+                current_item = [item_id, price]
 
-                        wanted_price = self.db.get_wanted_price(item_id)
-                        if price <= wanted_price and price <= self.balance/2:
+                if last_checked_item != current_item:
 
-                            if item_id not in self.items_stoplist:
-                                print("Trying to buy ", item_id)
-                                try_to_buy = self.buy(item_id, price)
-                                if try_to_buy:
-                                    wanted_sell_price = round((wanted_price/90)*100, 2)
-                                    print("Bought", item_id, price, "- wanted sell price - ", wanted_sell_price)
-                                    print(" ")
-                                else:
-                                    print("Could not buy", item_id, price)
-                                    print(" ")
+                    wanted_price = self.db.get_wanted_price(item_id)
+                    if price <= wanted_price and price <= self.balance/2:
 
-                        last_recorded_price = self.db.get_last_price(item_id)
-                        if price != last_recorded_price:
-                            qty = self.get_item_qty(listing)
-                            now  = self.get_current_time()
-                            item_name = self.get_item_name(listing)
+                        if item_id not in self.items_stoplist:
 
-                            if wanted_price == -1:
-                                self.db.add_new_item(item_id, item_name)
+                            print("Trying to buy ", item_name)
+                            try_to_buy = self.buy(item_id, price)
+
+                            if try_to_buy:
+
+                                wanted_sell_price = round(((wanted_price*1.1)/85)*100,2)
+                                self.db.add_new_transaction(item_id, item_name, price, wanted_sell_price)
+                                print("Bought", item_name, price, "- wanted sell price - ", wanted_sell_price)
+                                print(" ")
                             else:
-                                wanted_price = self.update_items_info_wanted_price(item_id)
+                                print("Could not buy", item_name, price)
+                                print(" ")
 
-                            print("{} current price is {} - want {}".format(item_name, price, wanted_price))
-                            print("")
+                    last_recorded_price = self.db.get_last_price(item_id)
+                    if price != last_recorded_price:
+                        qty = self.get_item_qty(listing)
+                        now  = self.get_current_time()
+                    
+
+                        if wanted_price == -1:
+                            self.db.add_new_item(item_id, item_name)
+                        else:
+                            wanted_price = self.update_items_info_wanted_price(item_id)
+
+                        print("{} current price is {} - want {}".format(item_name, price, wanted_price))
+                        print("")
                             
 
-                            self.db.insert_new_data(price, qty, now, item_id)
+                        self.db.insert_new_data(price, qty, now, item_id)
 
-                    last_checked_item = current_item
+                last_checked_item = current_item
+              
 
-                # time.sleep(1)
-                self.driver.refresh()
+                element_present = EC.presence_of_element_located((By.CLASS_NAME, 'list-one.marketThing'))
+                WebDriverWait(self.driver, 60, 0.1).until(element_present)
 
         except Exception as ex:
             print(ex, "try_cycle_err")
