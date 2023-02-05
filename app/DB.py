@@ -80,3 +80,10 @@ class BaseDB:
     def add_new_transaction(self, i_id, i_name, price, wsp):
         insertQuery = """INSERT INTO transactions (item_id, item_name ,buy_price, wanted_sell_price) VALUES (?, ?, ?, ?);"""
         self.cur.execute(insertQuery, (i_id,i_name,price,wsp))
+
+    def DELETE(self):
+        nums = self.cur.execute("""SELECT item_id from items_info""").fetchall()
+        nums = [i[0] for i in nums]
+        for i in nums:
+
+            self.cur.execute("""DELETE FROM item{} WHERE dt BETWEEN '29/01/2023 15:47:09' and '29/01/2023 20:56:01' """.format(i))

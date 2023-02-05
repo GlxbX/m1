@@ -3,18 +3,18 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 import sqlite3
-from DB import Database
+from DB import BaseDB
 
 
-ID = 942
+ID = 506
 
 
 class Chart:
     def __init__(self, ID):
-        db = Database()
+        db = BaseDB()
         db.connect()
-        df = pd.read_sql_query("SELECT price, dt from item{}".format(ID), db.con)
-        plt.plot(df['dt'], df['price'], color='red', marker='o')
+        df = pd.read_sql_query("SELECT qty, price, dt from item{}".format(ID), db.con)
+        plt.plot(df['dt'] ,df['price'], color='red', marker='o')
        
         title = db.get_item_name_by_id(ID)
         plt.title( title , fontsize=14)
