@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 class Analyzer:
     def get_start_time(self):
-        now = datetime.now() - timedelta(days=7)
+        now = datetime.now() - timedelta(days=9)
         now = datetime.strftime(now, "%d/%m/%Y %H:%M:%S")
         return now
     
