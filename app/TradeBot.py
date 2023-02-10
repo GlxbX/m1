@@ -27,7 +27,7 @@ class TradeBot(Scanner,Analyzer, Buyer):
 
         #ID предметов для покупки
         self.items_for_trade = []
-        self.items_stoplist = [985, 984, 942, 852, 554, 823, 556, 945, 558, 559, 564, 82, 199, 45, 73, 86, 46, 48, 105, 111, 97, 96, 208, 263, 390]
+        self.items_stoplist = [935 ,985, 984, 942, 852, 554, 823, 556, 945, 558, 559, 564, 82, 199, 45, 73, 86, 46, 48, 105, 111, 97, 96, 208, 263, 390]
 
         #настройки webdriver
         self.options = webdriver.ChromeOptions()
