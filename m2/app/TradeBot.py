@@ -3,15 +3,20 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+import requests
+
 from bs4 import BeautifulSoup as bs
 import time
-from datetime import datetime
+import datetime
 
 from .DB import BaseDB
 from .marketScanner import Scanner
 from .priceAnalyzer import Analyzer
 from .itemBuyer import Buyer
 from .secure_data import log, pas
+
+
 
 class TradeBot(Scanner,Analyzer, Buyer):
     def __init__(self):
@@ -29,8 +34,9 @@ class TradeBot(Scanner,Analyzer, Buyer):
         self.items_for_trade = []
         self.items_stoplist = [935 ,985, 984, 942, 852, 554, 823, 556, 945, 558, 559, 564, 82, 199, 45, 73, 86, 46, 48, 105, 111, 97, 96, 208, 263, 390]
 
-        #настройки webdriver
+        # настройки webdriver
         self.options = webdriver.ChromeOptions()
+        print
         self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
         self.options.add_argument("--disable-blink-features=AutomationControlled")
         self.options.add_argument("--disable-software-rasterizer")
@@ -40,6 +46,7 @@ class TradeBot(Scanner,Analyzer, Buyer):
         self.service = Service("D:\Worktable\Izmaylov\Staff\Python\m1project\chromedriver")
         self.driver = webdriver.Chrome(service=self.service, options=self.options)
         self.url = "https://monopoly-one.com/market"
+
 
     #аутентификация
     def authentificate(self):
@@ -63,29 +70,47 @@ class TradeBot(Scanner,Analyzer, Buyer):
         login_button = self.driver.find_element(By.CLASS_NAME  , "btn-ok").click()
         time.sleep(5)
 
+
+    
+
     def start_cycle(self):
+
+
+        #requests
+        self.session = requests.Session()
+
+        self.session.headers.update({"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"})
+        for cookie in self.driver.get_cookies():
+            self.session.cookies.set(cookie['name'], cookie['value'], domain=cookie['domain'])
+        
+        
         #подключение к market
         self.driver.get(url=self.url)
         time.sleep(5)
 
+        soup = self.get_bf4_source()
+        self.balance = self.get_balance(soup)
+
         last_checked_item = [0,0]
         try:
             while True:
-                soup = self.get_bf4_source()
+                start = time.time()
 
-                # self.driver.refresh()
-                self.driver.find_element(By.XPATH,'//a[contains(@href,"/market")]').click()
-
-                self.balance = self.get_balance(soup)
+                sess = self.session.get("https://monopoly-one.com/api/market.getLastSellups?count=50")
                 
-                listing = self.get_last_listing(soup)
+                last_50_listings = sess.json()
+
+                things = last_50_listings['data']['things']
+
+                last_item = last_50_listings['data']['things'][0]
 
                 #Получаем id и цену
-                item_id = self.get_item_id(listing)
-                price = self.get_item_price(listing)
-                item_name = self.get_item_name(listing)
-
+                item_name = last_item['title']
+                item_id = last_item['thing_prototype_id']
+                price = last_item['price']
+            
                 current_item = [item_id, price]
+            
 
                 if last_checked_item != current_item:
 
@@ -98,7 +123,7 @@ class TradeBot(Scanner,Analyzer, Buyer):
                             try_to_buy = self.buy(item_id, price)
 
                             if try_to_buy:
-
+                                self.balance -= price
                                 wanted_sell_price = round(((wanted_price*1.1)/85)*100,2)
                                 self.db.add_new_transaction(item_id, item_name, price, wanted_sell_price)
                                 print("Bought", item_name, price, "- wanted sell price - ", wanted_sell_price)
@@ -109,7 +134,7 @@ class TradeBot(Scanner,Analyzer, Buyer):
 
                     last_recorded_price = self.db.get_last_price(item_id)
                     if price != last_recorded_price:
-                        qty = self.get_item_qty(listing)
+                        qty = last_item['count']
                         now  = self.get_current_time()
                     
 
@@ -123,25 +148,49 @@ class TradeBot(Scanner,Analyzer, Buyer):
                             
 
                         self.db.insert_new_data(price, qty, now, item_id)
-
+                        print(22)
                 last_checked_item = current_item
-              
 
-                element_present = EC.presence_of_element_located((By.CLASS_NAME, 'list-one.marketThing'))
-                WebDriverWait(self.driver, 10, 0.1).until(element_present)
-                time.sleep(0.3)
 
+                for ident in range(1,50):
+                    item = things[ident]
+
+                    item_name = item['title']
+                    item_id = item['thing_prototype_id']
+                    price = item['price']
+
+
+                    wanted_price = self.db.get_wanted_price(item_id)
+                    last_recorded_price = self.db.get_last_price(item_id)
+                    if price != last_recorded_price:
+                        print('PRICE IS UP!  ',item_name, " current - ", price, "previous - ", last_recorded_price)
+                        print('')
+                        qty = item['count']
+                        now  = self.get_current_time()
+                        
+
+                        if wanted_price == -1:
+                            self.db.add_new_item(item_id, item_name)
+                        else:
+                            wanted_price = self.update_items_info_wanted_price(item_id)
+
+                        self.db.insert_new_data(price, qty, now, item_id)
+
+                algtime = round((time.time()-start),2)
+               
+                if algtime<1:
+                    time.sleep(1-algtime)
+                # print('ALGO TIME -- ',(round((time.time()-start),2)))
+                
+                
         except Exception as ex:
-            time.sleep(30)
-            self.start_cycle()
+            print()
+            print(ex)
 
         finally:
             self.driver.close()
             self.driver.quit()
             self.db.commit_and_close()
-
-
-
 
     def run(self):
         #подключение к базе данных
