@@ -2,6 +2,9 @@ from datetime import datetime, timedelta
 
 
 class Analyzer:
+    def  __init__(self, db):
+        self.db = db
+
     def get_start_time(self):
         now = datetime.now() - timedelta(days=30)
         now = datetime.strftime(now, "%d/%m/%Y %H:%M:%S")

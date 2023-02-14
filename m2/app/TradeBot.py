@@ -1,109 +1,73 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-import requests
-
-from bs4 import BeautifulSoup as bs
-import time
-import datetime
-
 from .DB import BaseDB
-from .marketScanner import Scanner
-from .priceAnalyzer import Analyzer
+from .seleniumDriver import SeleniumDriver
+from .requestsFuncs import Requests
+from .API import API
 from .itemBuyer import Buyer
-from .secure_data import log, pas
+from .priceAnalyzer import Analyzer
+import time
+from datetime import datetime
 
-
-
-class TradeBot(Scanner,Analyzer, Buyer):
+class TradeBot:
     def __init__(self):
         #подключение базы данных
         self.db = BaseDB()
-        
+
+        #подключение драйвера
+        self.selenium_handler = SeleniumDriver()
+
+        #подключение request
+        self.requests_handler = Requests()
+
+        #подлючение API
+        self.api_handler = API() 
+
+        #подключение закупщика
+        self.buyer = Buyer(self.api_handler)
+
+        #подключение анализатора
+        self.Analyzer = Analyzer(self.db)
+
         #переменные 
-        self.balance = 0
+        ###########
+        #Добавить в бд таблицу аакаунта с полем баланс 
+        #для отслеживания баланса без парсинга
+        ###########
+        self.balance = 11.23
+        self.access_token = None
 
-        #login and password
-        self.log = log 
-        self.pas = pas
 
-        #ID предметов для покупки
-        self.items_for_trade = []
+        #Stoplist закупки
         self.items_stoplist = [935 ,985, 984, 942, 852, 554, 823, 556, 945, 558, 559, 564, 82, 199, 45, 73, 86, 46, 48, 105, 111, 97, 96, 208, 263, 390]
 
-        # настройки webdriver
-        self.options = webdriver.ChromeOptions()
-        print
-        self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
-        self.options.add_argument("--disable-blink-features=AutomationControlled")
-        self.options.add_argument("--disable-software-rasterizer")
-        self.options.add_argument("--disable-gpu")
-        self.options.add_experimental_option("excludeSwitches", ['enable-logging'])
-        self.options.headless = False
-        self.service = Service("D:\Worktable\Izmaylov\Staff\Python\m1project\chromedriver")
-        self.driver = webdriver.Chrome(service=self.service, options=self.options)
-        self.url = "https://monopoly-one.com/market"
+    def get_current_time(self):
+        now = datetime.now()
+        now = datetime.strftime(now, "%d/%m/%Y %H:%M:%S")
+        return now
 
+    def run(self):
+        #подключение к базе данных
+        self.db.connect()
 
-    #аутентификация
-    def authentificate(self):
-        #страница аутентификациИ
-        self.driver.get(url='https://monopoly-one.com/auth')
-        time.sleep(5)
+        self.selenium_handler.authentificate()
 
-        #логгин
-        log_input = self.driver.find_element(By.ID, "auth-form-email")
-        log_input.clear()
-        log_input.send_keys(self.log)
-        time.sleep(5)
+        self.access_token = self.selenium_handler.return_access_token()
 
-        #пароль
-        pas_input = self.driver.find_element(By.ID, "auth-form-password")
-        pas_input.clear()
-        pas_input.send_keys(self.pas)
-        time.sleep(3)
+        self.requests_handler.update_cookie(self.selenium_handler.driver)
 
-        #кнопка submit
-        login_button = self.driver.find_element(By.CLASS_NAME  , "btn-ok").click()
-        time.sleep(5)
-
-
+        self.start_cycle()
     
-
     def start_cycle(self):
-
-
-        #requests
-        self.session = requests.Session()
-
-        self.session.headers.update({"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"})
-        for cookie in self.driver.get_cookies():
-            self.session.cookies.set(cookie['name'], cookie['value'], domain=cookie['domain'])
-        
-        
-        #подключение к market
-        self.driver.get(url=self.url)
-        time.sleep(5)
-
-        soup = self.get_bf4_source()
-        self.balance = self.get_balance(soup)
-
+      
+       
         last_checked_item = [0,0]
         try:
             while True:
                 start = time.time()
 
-                sess = self.session.get("https://monopoly-one.com/api/market.getLastSellups?count=50")
+                last_50_sellups = self.api_handler.get_last_sellups(self.requests_handler.session, 50)['data']['things']
                 
-                last_50_listings = sess.json()
-
-                things = last_50_listings['data']['things']
-
-                last_item = last_50_listings['data']['things'][0]
-
+                last_item = last_50_sellups[0]
+           
                 #Получаем id и цену
                 item_name = last_item['title']
                 item_id = last_item['thing_prototype_id']
@@ -115,12 +79,12 @@ class TradeBot(Scanner,Analyzer, Buyer):
                 if last_checked_item != current_item:
 
                     wanted_price = self.db.get_wanted_price(item_id)
-                    if price <= wanted_price and price <= self.balance/2:
+                    if price <= wanted_price and price <= self.balance:
 
                         if item_id not in self.items_stoplist:
 
                             print("Trying to buy ", item_name)
-                            try_to_buy = self.buy(item_id, price)
+                            try_to_buy = self.buyer.buy(self.requests_handler.session, item_id, price, self.access_token)
 
                             if try_to_buy:
                                 self.balance -= price
@@ -141,19 +105,19 @@ class TradeBot(Scanner,Analyzer, Buyer):
                         if wanted_price == -1:
                             self.db.add_new_item(item_id, item_name)
                         else:
-                            wanted_price = self.update_items_info_wanted_price(item_id)
+                            wanted_price = self.Analyzer.update_items_info_wanted_price(item_id)
 
                         print("{} current price is {} - want {}".format(item_name, price, wanted_price))
                         print("")
                             
 
                         self.db.insert_new_data(price, qty, now, item_id)
-                        print(22)
+                   
                 last_checked_item = current_item
 
 
                 for ident in range(1,50):
-                    item = things[ident]
+                    item = last_50_sellups[ident]
 
                     item_name = item['title']
                     item_id = item['thing_prototype_id']
@@ -172,14 +136,14 @@ class TradeBot(Scanner,Analyzer, Buyer):
                         if wanted_price == -1:
                             self.db.add_new_item(item_id, item_name)
                         else:
-                            wanted_price = self.update_items_info_wanted_price(item_id)
+                            wanted_price = self.Analyzer.update_items_info_wanted_price(item_id)
 
                         self.db.insert_new_data(price, qty, now, item_id)
 
                 algtime = round((time.time()-start),2)
                
-                if algtime<1:
-                    time.sleep(1-algtime)
+                if algtime<2.0:
+                    time.sleep(2.0-algtime)
                 # print('ALGO TIME -- ',(round((time.time()-start),2)))
                 
                 
@@ -188,15 +152,6 @@ class TradeBot(Scanner,Analyzer, Buyer):
             print(ex)
 
         finally:
-            self.driver.close()
-            self.driver.quit()
+            self.selenium_handler.driver.close()
+            self.selenium_handler.driver.quit()
             self.db.commit_and_close()
-
-    def run(self):
-        #подключение к базе данных
-        self.db.connect()
-
-        self.authentificate()
-        
-        self.start_cycle()
-     

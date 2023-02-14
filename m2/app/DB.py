@@ -1,20 +1,5 @@
 import sqlite3
 
-
-# class BaseDatabase:
-#     def __init__(self):
-#         pass
-
-#     def connect(self):
-#         self.con = sqlite3.connect(self.database,isolation_level=None)
-#         self.cur = self.con.cursor()
-
-#     def commit_and_close(self):
-#         self.cur.close()
-#         self.con.close()
-#         self.con = None 
-#         self.cur = None
-
 class BaseDB:
     def __init__(self):
         self.database = "GraphsData.sqlite"
@@ -31,8 +16,6 @@ class BaseDB:
         self.con.close()
         self.con = None 
         self.cur = None
-
-
 
     def add_new_item(self,i_id,i_name):
         insertQuery = """INSERT INTO items_info VALUES (?, ?, ?);"""
@@ -64,7 +47,6 @@ class BaseDB:
     def get_daily_prices(self,i_id, start_time):
         L = self.cur.execute("""SELECT price from item{} WHERE dt > '{}' """.format(i_id,start_time)).fetchall()
         return [i[0] for i in L]
-
 
     def update_wanted_price(self, i_id, price):
         self.cur.execute("""UPDATE items_info SET item_wanted_buy_price = {} WHERE item_id = {};""".format(price, i_id))
