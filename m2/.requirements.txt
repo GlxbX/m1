@@ -1,5 +1,0 @@
-selenium
-matplotlib
-beautifulsoup4
-lxml
-pysqlite3

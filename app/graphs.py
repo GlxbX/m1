@@ -6,7 +6,7 @@ import sqlite3
 from DB import BaseDB
 
 
-ID = 346
+ID = 310
 
 
 class Chart:

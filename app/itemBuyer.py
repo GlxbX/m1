@@ -1,54 +1,32 @@
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-import time
-
-
 class Buyer:
 
+    def __init__(self, API):
+        self.api = API
+
     #скрипт покупки item
-    def buy(self,id,price):
+    def buy(self, session, id,price, acc_tok):
         success = False
 
-        item_url = "https://monopoly-one.com/market/thing/{}".format(id)
-     
-        self.driver.get(item_url)
+        last_item = self.api.get_item_listings(session, id, 1)['data']['things'][0]
+       
 
-        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'marketThing-price'))
-        WebDriverWait(self.driver, 10).until(element_present)
-        
-        pr = self.driver.find_element(By.CLASS_NAME,"marketThing-price").text[:-3]
-        curr_price = float(pr)
+        thing_id = last_item['thing_id']
+        curr_price = last_item['price']
 
         if curr_price<=price:
-            #нажать кнопку купить
-            self.driver.find_element(By.CLASS_NAME, "button.button-small.button-grass").click()
 
-            element_present = EC.presence_of_element_located((By.CLASS_NAME, 'btn.btn-small.btn-error'))
-            WebDriverWait(self.driver, 10).until(element_present)
-           
-            #нажать кнопку подтверждения купить
-            self.driver.find_element(By.CLASS_NAME, "btn.btn-small.btn-error").click()
-            time.sleep(2)
+            params = {'thing_id':thing_id, 'price': round(100*curr_price), 'access_token': acc_tok}
+            response = self.api.buy_item(session, params)
 
-            #успех или ошибка
-            window_after_buy = EC.presence_of_element_located((By.CLASS_NAME, "dialog-box-title"))
-            WebDriverWait(self.driver, 10).until(window_after_buy)
-
-            message = self.driver.find_element(By.CLASS_NAME, "dialog-box-title").text
-            print(message)
-            if message == "Покупка совершена!":
+            if response.json()['code'] == 0:
                 success = True
         
-            elif message == "Ой!":
-                success = False
-               
             else:
                 print("------------------------------------ Buyer had an unknown error")
+                print(response.text)
 
-      
-        self.driver.get(url=self.url)
-        time.sleep(1)
+        else:
+            print("-------------------Didnt even see item ", id, price)
 
         return success
 
