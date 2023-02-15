@@ -9,6 +9,8 @@ from datetime import datetime
 
 class TradeBot:
     def __init__(self):
+        self.total_time = 0
+
         #подключение базы данных
         self.db = BaseDB()
 
@@ -54,6 +56,11 @@ class TradeBot:
 
         self.requests_handler.update_cookie(self.selenium_handler.driver)
 
+        self.balance = self.api_handler.get_account_balance(
+                                                            self.requests_handler.session,
+                                                            self.access_token
+                                                             )['result']['info']['balance']
+        
         self.start_cycle()
     
     def start_cycle(self):
@@ -142,16 +149,20 @@ class TradeBot:
 
                 algtime = round((time.time()-start),2)
                
-                if algtime<2.1:
-                    time.sleep(2.1-algtime)
+                if algtime<self.api_handler.call_time:
+                    time.sleep(self.api_handler.call_time-algtime)
+                self.total_time += (time.time()-start)
                 # print('ALGO TIME -- ',(round((time.time()-start),2)))
                 
                 
         except Exception as ex:
-            print()
+            print(self.total_time, ' --- total time')
             print(ex)
-
+            self.selenium_handler.driver.close()
+            self.selenium_handler.driver.quit()
+            self.db.commit_and_close()
         finally:
+            print(self.total_time, ' --- total time')
             self.selenium_handler.driver.close()
             self.selenium_handler.driver.quit()
             self.db.commit_and_close()

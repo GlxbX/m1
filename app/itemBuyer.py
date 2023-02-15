@@ -18,7 +18,7 @@ class Buyer:
             params = {'thing_id':thing_id, 'price': round(100*curr_price), 'access_token': acc_tok}
             response = self.api.buy_item(session, params)
 
-            if response.json()['code'] == 0:
+            if response['code'] == 0:
                 success = True
         
             else:
