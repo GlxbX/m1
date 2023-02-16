@@ -17,8 +17,8 @@ class SeleniumDriver:
         self.options.add_argument("--disable-software-rasterizer")
         self.options.add_argument("--disable-gpu")
         self.options.add_experimental_option("excludeSwitches", ['enable-logging'])
-        self.options.headless = True
-        self.service = Service("D:\Worktable\Izmaylov\Staff\Python\m1project\chromedriver")
+        self.options.headless = False
+        self.service = Service("C:\cdriver\chromedriver")
         self.driver = webdriver.Chrome(service=self.service, options=self.options)
         
 

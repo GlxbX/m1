@@ -20,10 +20,12 @@ class Buyer:
 
             if response['code'] == 0:
                 success = True
+            elif response['code'] == 601:
+                print("Item was alredy bought before us", id , price)
         
             else:
                 print("------------------------------------ Buyer had an unknown error")
-                print(response.text)
+                print(response)
 
         else:
             print("-------------------Didnt even see item ", id, price)

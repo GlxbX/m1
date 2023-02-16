@@ -7,7 +7,7 @@ class API:
         self.buy_item_link = "https://monopoly-one.com/api/market.buy"
         self.get_balance_link = "https://monopoly-one.com/api/execute.wallet"
 
-        self.call_time = round(3600/1750,2)
+        self.call_time = 3600/1750
 
         self.counter = 0
         self.start_time = time.time() 
