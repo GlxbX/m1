@@ -4,6 +4,9 @@ from .requestsFuncs import Requests
 from .API import API
 from .itemBuyer import Buyer
 from .priceAnalyzer import Analyzer
+from .timeManager import TimeManager
+
+
 import time
 from datetime import datetime
 
@@ -13,6 +16,7 @@ from .custom_objects import Item, Thing
 class TradeBot:
     def __init__(self):
         self.total_time = 0
+        self.acc_id = 1
 
         #подключение базы данных
         self.db = BaseDB()
@@ -31,6 +35,9 @@ class TradeBot:
 
         #подключение анализатора
         self.Analyzer = Analyzer(self.db)
+
+        #подключение кастомного таймера
+        self.time_handler = TimeManager()
 
         #переменные 
         ###########
@@ -52,6 +59,35 @@ class TradeBot:
     def get_item_from_sellup(self, sellup):
         return Item(sellup['thing_prototype_id'], sellup['title'], sellup['price'],sellup['count'])
 
+    def update_sold_items(self):
+        t_count = self.db.get_t_counter(self.acc_id)
+        params = {'offset': 0, 'count': 50, 'access_token': self.access_token}    
+
+        data = self.api_handler.get_wallet_history(self.requests_handler.session, params)['data']
+        count = data['count']
+        transactions = data['transactions']
+
+        total_recieved_money = 0
+
+        
+
+        for i in range(count - t_count):
+            tran = transactions[i]
+            if tran['type'] == 2 and tran['sum']>0:
+                thing_id = tran['additional']['item_id']
+
+                all_id =[i[0] for i in self.db.get_t_ids()]
+                print(all_id)
+                if thing_id in all_id:
+                    res_pr = tran['sum']
+                    dt = self.get_current_time()
+
+                    total_recieved_money+=res_pr
+                    self.db.update_sold_transactions(thing_id, res_pr, dt)
+                    print("SOLD item ",thing_id, ' for ', res_pr)
+
+        self.db.update_t_counter(self.acc_id, count)
+        self.balance+=total_recieved_money
 
     def run(self):
         #подключение к базе данных
@@ -146,7 +182,12 @@ class TradeBot:
                     finally:
                         pass
 
-    
+                
+                if self.time_handler.is_transactions_update_time():
+                    print(' ')
+                    print('UPDATING SOLD ITEMS')
+                    print(" ")
+                    self.update_sold_items()
 
 
                 algtime = round((time.time()-start),2)

@@ -64,9 +64,28 @@ class BaseDB:
         insertQuery = """INSERT INTO transactions (thing_id, thing_name ,buy_price, wanted_sell_price) VALUES (?, ?, ?, ?);"""
         self.cur.execute(insertQuery, (thing.id, thing.name, thing.buy_price, thing.wanted_sell_price))
 
-    def DELETE(self):
-        nums = self.cur.execute("""SELECT item_id from items_info""").fetchall()
-        nums = [i[0] for i in nums]
-        for i in nums:
+    def get_t_counter(self, acc_id):
+        return self.cur.execute("""SELECT t_count FROM accounts WHERE acc_id = {}""".format(acc_id)).fetchone()[0]
 
-            self.cur.execute("""DELETE FROM item{} WHERE dt BETWEEN '29/01/2023 15:47:09' and '29/01/2023 20:56:01' """.format(i))
+    def update_t_counter(self, acc_id, counter):
+        self.cur.execute("""UPDATE accounts SET t_count = {} WHERE acc_id = {}""".format(counter, acc_id))
+
+    def get_b_price_by_thing_id(self, t_id):
+        return self.cur.execute("""SELECT buy_price FROM transactions WHERE thing_id = {}""".format(t_id)).fetchone()[0]
+
+    def get_t_ids(self):
+        return self.cur.execute("""SELECT thing_id FROM transactions""").fetchall()
+
+    def update_sold_transactions(self, thing_id, res_price, dt):
+        b_price = self.get_b_price_by_thing_id(thing_id)
+        profit = round((res_price - b_price),2)
+        d = {'rm': res_price, 'profit': profit, 'dt': dt, 't_id': thing_id}
+        self.cur.execute("""UPDATE transactions SET recieved_money =:rm, profit =:profit, is_sold = 1, sold_time =:dt WHERE thing_id =:t_id;""", d)
+
+
+    # def DELETE(self):
+    #     nums = self.cur.execute("""SELECT item_id from items_info""").fetchall()
+    #     nums = [i[0] for i in nums]
+    #     for i in nums:
+
+    #         self.cur.execute("""DELETE FROM item{} WHERE dt BETWEEN '29/01/2023 15:47:09' and '29/01/2023 20:56:01' """.format(i))

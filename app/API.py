@@ -6,6 +6,7 @@ class API:
         self.last_item_listings_link = "https://monopoly-one.com/api/market.getListing?thing_prototype_id={}&count={}"
         self.buy_item_link = "https://monopoly-one.com/api/market.buy"
         self.get_balance_link = "https://monopoly-one.com/api/execute.wallet"
+        self.get_walle_history_link = "https://monopoly-one.com/api/wallet.getHistory"
 
         self.call_time = 3600/1750
 
@@ -54,6 +55,11 @@ class API:
         self.counter+=1
         params= {'access_token':acc_tok}
         return session.post(self.get_balance_link, params).json()
+
+    def get_wallet_history(self, session, params):
+        self.counter+=1
+        
+        return session.post(self.get_walle_history_link, params).json()
 
     
                 
