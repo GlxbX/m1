@@ -1,5 +1,6 @@
 import sqlite3
 
+
 class BaseDB:
     def __init__(self):
         self.database = "GraphsData.sqlite"
@@ -59,9 +60,9 @@ class BaseDB:
         wp = self.cur.execute("""SELECT item_wanted_buy_price from items_info WHERE item_id = {}""".format(i_id)).fetchone()
         return wp[0] if wp!= None else -1
 
-    def add_new_transaction(self, i_id, i_name, price, wsp):
-        insertQuery = """INSERT INTO transactions (item_id, item_name ,buy_price, wanted_sell_price) VALUES (?, ?, ?, ?);"""
-        self.cur.execute(insertQuery, (i_id,i_name,price,wsp))
+    def add_new_transaction(self, thing):
+        insertQuery = """INSERT INTO transactions (thing_id, thing_name ,buy_price, wanted_sell_price) VALUES (?, ?, ?, ?);"""
+        self.cur.execute(insertQuery, (thing.id, thing.name, thing.buy_price, thing.wanted_sell_price))
 
     def DELETE(self):
         nums = self.cur.execute("""SELECT item_id from items_info""").fetchall()

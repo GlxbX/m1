@@ -7,6 +7,9 @@ from .priceAnalyzer import Analyzer
 import time
 from datetime import datetime
 
+from .custom_objects import Item, Thing
+
+
 class TradeBot:
     def __init__(self):
         self.total_time = 0
@@ -46,6 +49,10 @@ class TradeBot:
         now = datetime.strftime(now, "%d/%m/%Y %H:%M:%S")
         return now
 
+    def get_item_from_sellup(self, sellup):
+        return Item(sellup['thing_prototype_id'], sellup['title'], sellup['price'],sellup['count'])
+
+
     def run(self):
         #подключение к базе данных
         self.db.connect()
@@ -66,86 +73,81 @@ class TradeBot:
     def start_cycle(self):
       
        
-        last_checked_item = [0,0]
+        last_checked_item = Item(0,0,0,0)
         try:
             while True:
                 start = time.time()
 
                 last_50_sellups = self.api_handler.get_last_sellups(self.requests_handler.session, 50)['data']['things']
-                
-                last_item = last_50_sellups[0]
-           
-                #Получаем id и цену
-                item_name = last_item['title']
-                item_id = last_item['thing_prototype_id']
-                price = last_item['price']
             
-                current_item = [item_id, price]
-            
-
+                current_item = self.get_item_from_sellup(last_50_sellups[0])
+               
+                #блок закупки последненго предмета
                 if last_checked_item != current_item:
-
-                    wanted_price = self.db.get_wanted_price(item_id)
-                    if price <= wanted_price and price <= self.balance:
-
-                        if item_id not in self.items_stoplist:
-
-                            print("Trying to buy ", item_name)
-                            try_to_buy = self.buyer.buy(self.requests_handler.session, item_id, price, self.access_token)
-
-                            if try_to_buy:
-                                self.balance -= price
-                                wanted_sell_price = round(((wanted_price*1.1)/85)*100,2)
-                                self.db.add_new_transaction(item_id, item_name, price, wanted_sell_price)
-                                print("Bought", item_name, price, "- wanted sell price - ", wanted_sell_price)
-                                print(" ")
-                            else:
-                                print("Could not buy", item_name, price)
-                                print(" ")
-
-                    last_recorded_price = self.db.get_last_price(item_id)
-                    if price != last_recorded_price:
-                        qty = last_item['count']
-                        now  = self.get_current_time()
                     
+                    try:
+                        current_item.wanted_price = self.db.get_wanted_price(current_item.id)
+                        if current_item.price <= current_item.wanted_price and current_item.price <= self.balance/2:
 
-                        if wanted_price == -1:
-                            self.db.add_new_item(item_id, item_name)
-                        else:
-                            wanted_price = self.Analyzer.update_items_info_wanted_price(item_id)
+                            if current_item.id not in self.items_stoplist:
 
-                        print("{} current price is {} - want {}".format(item_name, price, wanted_price))
-                        print("")
-                            
+                                print("Trying to buy ", current_item.name)
+                                print(" ")
+                                buyer_response = self.buyer.buy(self.requests_handler.session, current_item, self.access_token)
 
-                        self.db.insert_new_data(price, qty, now, item_id)
-                   
-                last_checked_item = current_item
+                                if buyer_response[0]==0:
+                                    thing = buyer_response[1]
+                                    self.balance -= thing.buy_price
+                                    self.db.add_new_transaction(thing)
+                                    print("Bought", thing.name, thing.buy_price, "- wanted sell price - ", thing.wanted_sell_price)
+                                    print(" ")
+
+                                elif buyer_response[0] == 601:
+                                    print("Item was alredy bought before us", current_item.id ,current_item.price)
+                                    print(" ")
+
+                                elif buyer_response[0] == -1:
+                                    print("Didnt even see item ",current_item.id, current_item.price)
+                                    print(" ")
+                                
+                                elif buyer_response[0] == -2:
+                                    print("------------------------------------ Buyer had an unknown error")
+                                    print(buyer_response[1])
+
+                    except Exception as ex:
+                        print("Exeption while buying an item ", ex )
+
+                    finally:
+                        last_checked_item = current_item
+                    
+                #блок обновления цены в бд для последних 50 предметов
+                for ident in range(50):
+                    try:
+                        item = self.get_item_from_sellup(last_50_sellups[ident])
+
+                        last_recorded_price = self.db.get_last_price(item.id)
+
+                        if item.price != last_recorded_price:
+                            item.wanted_price = self.db.get_wanted_price(item.id)
+                            now  = self.get_current_time()
+
+                            print(item)
+                            if item.wanted_price == -1:
+                                self.db.add_new_item(item.id, item.name)
+                            else:
+                                item.wanted_price = self.Analyzer.update_items_info_wanted_price(item.id)
+
+                            self.db.insert_new_data(item.price, item.qty, now, item.id)
 
 
-                for ident in range(1,50):
-                    item = last_50_sellups[ident]
+                    except Exception as ex:
+                        print("Exception while updating items prices ", ex, ident)
 
-                    item_name = item['title']
-                    item_id = item['thing_prototype_id']
-                    price = item['price']
+                    finally:
+                        pass
 
+    
 
-                    wanted_price = self.db.get_wanted_price(item_id)
-                    last_recorded_price = self.db.get_last_price(item_id)
-                    if price != last_recorded_price:
-                        print('PRICE IS UP!  ',item_name, " current - ", price, "previous - ", last_recorded_price)
-                        print('')
-                        qty = item['count']
-                        now  = self.get_current_time()
-                        
-
-                        if wanted_price == -1:
-                            self.db.add_new_item(item_id, item_name)
-                        else:
-                            wanted_price = self.Analyzer.update_items_info_wanted_price(item_id)
-
-                        self.db.insert_new_data(price, qty, now, item_id)
 
                 algtime = round((time.time()-start),2)
                
@@ -158,9 +160,7 @@ class TradeBot:
         except Exception as ex:
             print(self.total_time, ' --- total time')
             print(ex)
-            self.selenium_handler.driver.close()
-            self.selenium_handler.driver.quit()
-            self.db.commit_and_close()
+            
         finally:
             print(self.total_time, ' --- total time')
             self.selenium_handler.driver.close()

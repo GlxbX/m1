@@ -6,7 +6,7 @@ import sqlite3
 from DB import BaseDB
 
 
-ID = 310
+ID = 837
 
 
 class Chart:
@@ -14,6 +14,7 @@ class Chart:
         db = BaseDB()
         db.connect()
         df = pd.read_sql_query("SELECT qty, price, dt from item{}".format(ID), db.con)
+        coef = [df['price'][i] * df['qty'][i] for i in range(len(df))]
         plt.plot(df['dt'] ,df['price'], color='red', marker='o')
        
         title = db.get_item_name_by_id(ID)
