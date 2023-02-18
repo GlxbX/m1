@@ -9,7 +9,7 @@ import time
 from .secure_data import log, pas
 
 class SeleniumDriver:
-    def __init__(self):
+    def __init__(self, time_handler):
         # настройки webdriver
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
@@ -20,7 +20,8 @@ class SeleniumDriver:
         self.options.headless = False
         self.service = Service("D:\Worktable\Izmaylov\Staff\Python\m1project\chromedriver")
         self.driver = webdriver.Chrome(service=self.service, options=self.options)
-        
+
+        self.time_handler = time_handler
 
     def return_access_token(self):
         return self.driver.execute_script("return localStorage.getItem('access_token')")
@@ -40,17 +41,17 @@ class SeleniumDriver:
         log_input = self.driver.find_element(By.ID, "auth-form-email")
         log_input.clear()
         log_input.send_keys(log)
-        time.sleep(5)
+        self.time_handler.api_call_delay(1)
 
         #пароль
         pas_input = self.driver.find_element(By.ID, "auth-form-password")
         pas_input.clear()
         pas_input.send_keys(pas)
-        time.sleep(3)
+        self.time_handler.api_call_delay(1)
 
         #кнопка submit
         login_button = self.driver.find_element(By.CLASS_NAME  , "btn-ok").click()
-        time.sleep(5)
+        self.time_handler.api_call_delay(1)
         
 
 

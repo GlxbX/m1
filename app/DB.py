@@ -74,7 +74,7 @@ class BaseDB:
         return self.cur.execute("""SELECT buy_price FROM transactions WHERE thing_id = {}""".format(t_id)).fetchone()[0]
 
     def get_t_ids(self):
-        return self.cur.execute("""SELECT thing_id FROM transactions""").fetchall()
+        return self.cur.execute("""SELECT thing_id FROM transactions WHERE is_sold = 0 """).fetchall()
 
     def update_sold_transactions(self, thing_id, res_price, dt):
         b_price = self.get_b_price_by_thing_id(thing_id)
