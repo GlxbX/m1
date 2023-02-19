@@ -15,7 +15,7 @@ class Chart:
         db.connect()
         df = pd.read_sql_query("SELECT qty, price, dt from item{}".format(ID), db.con)
         coef = [df['price'][i] * df['qty'][i] for i in range(len(df))]
-        plt.plot(df['dt'] ,df['price'], color='red', marker='o')
+        plt.plot(df['dt'] ,coef, color='red', marker='o')
        
         title = db.get_item_name_by_id(ID)
         plt.title( title , fontsize=14)
