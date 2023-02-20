@@ -6,7 +6,7 @@ class Analyzer:
         self.db = db
 
     def get_start_time(self):
-        now = datetime.now() - timedelta(days=8)
+        now = datetime.now() - timedelta(days=3)
         now = datetime.strftime(now, "%d/%m/%Y %H:%M:%S")
         return now
     

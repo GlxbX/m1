@@ -43,7 +43,7 @@ class TradeBot:
         self.access_token = None
 
         #Stoplist закупки
-        self.items_stoplist = [435,935 ,985, 984, 942, 852, 554, 823, 556, 945, 558, 559, 564, 82, 199, 45, 73, 86, 46, 48, 105, 111, 97, 96, 208, 263, 390]
+        self.items_stoplist = [923,935 ,985, 984, 942, 852, 554, 823, 556, 945, 558, 559, 564, 82, 199, 45, 73, 86, 46, 48, 105, 111, 97, 96, 208, 263, 390]
 
     def get_current_time(self):
         now = datetime.now()
