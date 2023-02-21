@@ -123,7 +123,7 @@ class TradeBot:
                         current_item.wanted_price = self.db.get_wanted_price(current_item.id)
                         print(current_item)
                         print(" ")
-                        if current_item.price <= current_item.wanted_price and current_item.price <= self.balance/2:
+                        if current_item.price <= current_item.wanted_price and current_item.price <= self.balance/3:
 
                             if current_item.id not in self.items_stoplist:
                                 print("---------")
