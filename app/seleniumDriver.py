@@ -26,6 +26,9 @@ class SeleniumDriver:
     def return_access_token(self):
         return self.driver.execute_script("return localStorage.getItem('access_token')")
 
+    def return_refresh_token(self):
+        return self.driver.execute_script("return localStorage.getItem('refresh_token')")
+
 
     #аутентификация
 

@@ -1,9 +1,12 @@
 from app.DB import BaseDB
 
-g = "WHERE dt BETWEEN '11/02/2023 00:00:00' and '20/02/2023 20:56:01'"
+
+i_id = 346
+
+g = "WHERE dt BETWEEN '19/02/2023 00:00:00' and '22/02/2023 20:56:01'"
 db = BaseDB()
 db.connect()
-data = db.cur.execute("""SELECT qty, price, dt from item946""").fetchall()
+data = db.cur.execute("""SELECT qty, price, dt from item{} WHERE dt BETWEEN '19/02/2023 00:00:00' and '22/02/2023 20:56:01' """.format(i_id)).fetchall()
 print(data)
 
 from collections import defaultdict

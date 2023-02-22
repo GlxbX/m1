@@ -31,7 +31,7 @@ class Buyer:
             elif response['code'] == 601:
                 return [601, None]
                 
-        
+            
             else:
                 return [-2, response]
                 print("------------------------------------ Buyer had an unknown error")

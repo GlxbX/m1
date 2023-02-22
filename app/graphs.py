@@ -22,13 +22,13 @@ class Chart:
         fig,ax = plt.subplots()
         # make a plot
         ax.plot(df['dt'],
-                df['qty'],
+                df['price'],
                 color="red", 
                 marker="o")
         # set x-axis label
         ax.set_xlabel("datetime", fontsize = 10)
         # set y-axis label
-        ax.set_ylabel("lifeExp",
+        ax.set_ylabel("price",
                     color="red",
                     fontsize=14)
 
@@ -36,8 +36,8 @@ class Chart:
         # twin object for two different y-axis on the sample plot
         ax2=ax.twinx()
         # make a plot with different y-axis using second axis object
-        ax2.plot(df['dt'], df["price"],color="blue",marker="o")
-        ax2.set_ylabel("price",color="blue",fontsize=14)
+        ax2.plot(df['dt'], df["qty"],color="blue",marker="o")
+        ax2.set_ylabel("qty",color="blue",fontsize=14)
         # plt.show()
       
 

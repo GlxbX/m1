@@ -7,6 +7,7 @@ class API:
         self.buy_item_link = "https://monopoly-one.com/api/market.buy"
         self.get_balance_link = "https://monopoly-one.com/api/execute.wallet"
         self.get_walle_history_link = "https://monopoly-one.com/api/wallet.getHistory"
+        self.refresh_access_token_link = "https://monopoly-one.com/api/auth.refresh"
 
         self.time_handler = time_handler
 
@@ -16,7 +17,7 @@ class API:
     def get_last_sellups(self, session, count):
         s = session.get(self.last_sellups_link.format(count)).json()
         if s['code'] != 0:
-            print(s)
+            print(s['code'] ,s)
 
         self.c+=1
         return s
@@ -41,7 +42,15 @@ class API:
         response = session.post(self.get_walle_history_link, params).json()
         self.time_handler.api_call_delay(1)
         return response
-
     
-                
+    def refresh_access_token(self, session, refresh_token):
+        self.c+=1
+        response =session.post(self.refresh_access_token_link, refresh_token)
+
+        if response['code'] != 0:
+            print(response)
+
+        new_access_token = response['data']['access_token']
+        new_refresh_token = response['data']['refresh_token_token']
+        return new_access_token, new_refresh_token   
         

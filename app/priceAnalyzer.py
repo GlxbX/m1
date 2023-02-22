@@ -2,19 +2,17 @@ from datetime import datetime, timedelta
 
 
 class Analyzer:
-    def  __init__(self, db):
+    def  __init__(self, db, time_handler):
         self.db = db
+        self.time_handler = time_handler
 
-    def get_start_time(self):
-        now = datetime.now() - timedelta(days=3)
-        now = datetime.strftime(now, "%d/%m/%Y %H:%M:%S")
-        return now
-    
 
     def get_new_wanted_price(self,i_id):
-        start_time = self.get_start_time()
+
+        now = self.time_handler.get_current_time()
+        start_time = self.time_handler.get_start_time(3)
            
-        price_list = self.db.get_daily_prices(i_id, start_time)
+        price_list = self.db.get_daily_prices(i_id, start_time, now)
 
 
         ph_list = []

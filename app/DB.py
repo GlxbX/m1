@@ -45,8 +45,8 @@ class BaseDB:
         insertQuery = """INSERT INTO item{} VALUES (?, ?, ?);""".format(id)
         self.cur.execute(insertQuery, (price, qty,timestamp))
         
-    def get_daily_prices(self,i_id, start_time):
-        L = self.cur.execute("""SELECT price from item{} WHERE dt > '{}' """.format(i_id,start_time)).fetchall()
+    def get_daily_prices(self,i_id, start_time, now):
+        L = self.cur.execute("""SELECT price from item{} WHERE dt BETWEEN '{}' and '{}' """.format(i_id,start_time, now)).fetchall()
         return [i[0] for i in L]
 
     def update_wanted_price(self, i_id, price):
