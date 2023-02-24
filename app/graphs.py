@@ -4,18 +4,21 @@ import matplotlib.dates as mdates
 
 import sqlite3
 from DB import BaseDB
+from timeManager import TimeManager
 
 
-ID = 344
-
+ID = 566
 
 class Chart:
     def __init__(self, ID):
         db = BaseDB()
         db.connect()
 
+        tm = TimeManager()
 
-        df = pd.read_sql_query("SELECT qty, price, dt from item{}".format(ID), db.con)
+        st = tm.get_start_time(9)
+        now = tm.get_current_time()
+        df = pd.read_sql_query("SELECT qty, price, dt from item{} WHERE dt BETWEEN '{}' and '{}' ".format(ID, st, now), db.con)
 
         coef = [df['price'][i] * df['qty'][i] for i in range(len(df))]
 

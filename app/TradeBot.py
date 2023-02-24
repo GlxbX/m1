@@ -8,9 +8,9 @@ from .timeManager import TimeManager
 
 
 import time
-from datetime import datetime
 
-from .custom_objects import Item, Thing
+
+from .custom_objects import Item
 
 
 class TradeBot:
@@ -89,6 +89,7 @@ class TradeBot:
                     total_recieved_money+=value 
                 
         print("Total recieved money - ", total_recieved_money)
+        print("-------------------")
         print(" ")
         self.db.update_t_counter(self.acc_id, count)
         self.balance+=total_recieved_money
@@ -203,13 +204,13 @@ class TradeBot:
                 #обновление данных о проданных предметах
                 if self.time_handler.is_transactions_update_time():
                     try:
-                        print(' ')
+                        print("-------------------")
                         print('UPDATING SOLD ITEMS')
                         print(" ")
                         self.update_sold_items()
 
                     except Exception as Ex:
-                        print("Error while updating sold items", ex)
+                        print("Error while updating sold items", Ex)
                     
                     finally:
                         pass
@@ -228,7 +229,7 @@ class TradeBot:
                         print("-----------------------------")
 
                     except Exception as Ex:
-                        print("Error while creating report", ex)
+                        print("Error while creating report", Ex)
 
                     finally:
                         pass 
@@ -238,8 +239,8 @@ class TradeBot:
                     try:
                         acc_tok, ref_tok = self.api_handler.refresh_access_token(self.requests_handler.session, self.refresh_token)
                     
-                    except Exception as ex:
-                        print("Error while refreshing access token ", ex)
+                    except Exception as Ex:
+                        print("Error while refreshing access token ", Ex)
                     
                     finally:
                         self.access_token, self.refresh_token = acc_tok, ref_tok

@@ -45,7 +45,7 @@ class API:
     
     def refresh_access_token(self, session, refresh_token):
         self.c+=1
-        response =session.post(self.refresh_access_token_link, refresh_token)
+        response =session.post(self.refresh_access_token_link, refresh_token).json()
 
         if response['code'] != 0:
             print(response)
