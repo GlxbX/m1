@@ -10,7 +10,7 @@ from .timeManager import TimeManager
 import time
 
 
-from .custom_objects import Item
+from .custom_objects import Item, Thing
 
 
 class TradeBot:
@@ -44,7 +44,7 @@ class TradeBot:
         self.refresh_token = None 
 
         #Stoplist закупки
-        self.items_stoplist = [923,935 ,985, 984, 942, 852, 554, 823, 556, 945, 558, 559, 564, 82, 199, 45, 73, 86, 46, 48, 105, 111, 97, 96, 208, 263, 390]
+        self.items_stoplist = [916,923,935 ,985, 984, 942, 852, 554, 823, 556, 945, 558, 559, 564, 82, 199, 45, 73, 86, 46, 48, 105, 111, 97, 96, 208, 263, 390]
 
 
 
@@ -104,8 +104,6 @@ class TradeBot:
 
         self.refresh_token = self.selenium_handler.return_refresh_token()
 
-        print(self.refresh_token)
-
         self.requests_handler.update_cookie(self.selenium_handler.driver)
 
         self.update_sold_items()
@@ -118,16 +116,20 @@ class TradeBot:
         self.start_cycle()
     
     def start_cycle(self):
-      
-        last_checked_item = Item(0,0,0,0)
         try:
+            last_checked_item = Item(0,0,0,0)
+            last_market_scope = [Item(0,0,0,0) for i in range(50)]
+
             while True:
                 start = time.time()
 
                 #API call for sellups 
                 try:
                     last_50_sellups = self.api_handler.get_last_sellups(self.requests_handler.session, 50)['data']['things']
-                
+                    # print(time.time() - start, "------response time")
+                    market_scope = [self.get_item_from_sellup(i) for i in last_50_sellups]
+                    
+
                     current_item = self.get_item_from_sellup(last_50_sellups[0])
                 except Exception as Ex:
                     print("Error at the start of cycly", Ex)
@@ -137,9 +139,14 @@ class TradeBot:
 
                 #блок закупки последненго предмета
                 if last_checked_item != current_item:
-          
+                    
                     try:
                         current_item.wanted_price = self.db.get_wanted_price(current_item.id)
+                        if current_item.wanted_price == -1:
+                            self.db.add_new_item(current_item.id, current_item.name)
+                        else:
+                            current_item.wanted_price = self.Analyzer.update_items_info_wanted_price(current_item.id)
+                      
                         print(current_item)
                         print(" ")
                         if current_item.price <= current_item.wanted_price and current_item.price <= self.balance/3:
@@ -147,6 +154,7 @@ class TradeBot:
                             if current_item.id not in self.items_stoplist:
                                 print("---------")
                                 print("Trying to buy ", current_item.name)
+                                print(time.time() - start)
                                 print(" ")
                                 buyer_response = self.buyer.buy(self.requests_handler.session, current_item, self.access_token)
 
@@ -189,6 +197,19 @@ class TradeBot:
                         item = self.get_item_from_sellup(last_50_sellups[ident])
 
                         last_recorded_price = self.db.get_last_price(item.id)
+                        # last_recorded_qty = self.db.get_last_qty(item.id)
+
+                        # if item.qty != last_recorded_qty:
+                        #     item.wanted_price = self.db.get_wanted_price(item.id)
+                        #     now  = self.time_handler.get_current_time()
+
+                            
+                        #     if item.wanted_price == -1:
+                        #         self.db.add_new_item(item.id, item.name)
+                        #     else:
+                        #         item.wanted_price = self.Analyzer.update_items_info_wanted_price(item.id)
+
+                        #     self.db.insert_new_data(item.price, item.qty, now, item.id)
 
                         if item.price != last_recorded_price:
                             item.wanted_price = self.db.get_wanted_price(item.id)
@@ -242,6 +263,32 @@ class TradeBot:
 
                     finally:
                         pass 
+
+                # #продажа предметов
+                # if self.time_handler.is_sell_time():
+                #     try:
+                #         print(" ")
+                #         print("------ Listing items ------")
+                #         things = self.db.get_items_for_sale()
+                #         print(things)
+                #         if things == 0:
+                #             print("No items for sale")
+                            
+                #         else:
+                #             for thing in things:
+                #                 thing_for_sale = Thing(thing[0], thing[1], thing[2], thing[3])
+                #                 print(" ")
+                #                 print("Listing ", thing_for_sale.name, thing_for_sale.wanted_sell_price)
+
+                #                 self.buyer.sell(self.requests_handler.session, thing_for_sale, self.access_token)
+                #                 self.time_handler.api_call_delay(1)
+
+                #         print(" ")
+
+                #     except Exception as Ex:
+                #         print("Error while selling items", Ex)
+                #     finally:
+                #         pass
 
                 #Обновление acces токена
                 if self.time_handler.is_update_token_time():

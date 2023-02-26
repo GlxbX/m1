@@ -41,6 +41,11 @@ class BaseDB:
         price = self.cur.execute("SELECT price FROM item{}".format(id)).fetchall()
         return 0 if price == [] else list(reversed(price))[0][0]
 
+    def get_last_qty(self,id):
+        self.create_new_item_table(id)
+        qty = self.cur.execute("SELECT qty FROM item{}".format(id)).fetchall()
+        return 0 if qty == [] else list(reversed(qty))[0][0]
+
     def insert_new_data(self, price, qty ,timestamp, id):
         insertQuery = """INSERT INTO item{} VALUES (?, ?, ?);""".format(id)
         self.cur.execute(insertQuery, (price, qty,timestamp))
@@ -59,6 +64,10 @@ class BaseDB:
     def get_wanted_price(self,i_id):
         wp = self.cur.execute("""SELECT item_wanted_buy_price from items_info WHERE item_id = {}""".format(i_id)).fetchone()
         return wp[0] if wp!= None else -1
+
+    def get_items_for_sale(self):
+        items = self.cur.execute("""SELECT thing_id, thing_name, buy_price, wanted_sell_price FROM transactions WHERE is_listed = 0""").fetchall()
+        return 0 if items == [] else items
 
     def add_new_transaction(self, thing):
         insertQuery = """INSERT INTO transactions (thing_id, thing_name ,buy_price, wanted_sell_price) VALUES (?, ?, ?, ?);"""

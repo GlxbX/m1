@@ -44,3 +44,10 @@ class Buyer:
         
 
 
+    def sell(self, session, thing, acc_tok):
+        params = {'thing_id': thing.id, 'price': thing.wanted_sell_price, 'access_token': acc_tok}
+        response = self.api.sell_item(session, params)
+        if response['code'] == 0:
+            print("Success")
+        else:
+            print(response)

@@ -9,6 +9,8 @@ class TimeManager:
 
         self.report_time_start = time.time()
 
+        self.sell_time_start = time.time()
+
         self.TOKEN_UPDATE_START_TIME = time.time()
 
         self.API_ALLOWED_CALL_TIME = 2.01
@@ -35,6 +37,14 @@ class TimeManager:
         return False
         
 
+    def is_sell_time(self):
+        t = time.time() - self.sell_time_start
+        if t > 300:
+            self.sell_time_start = time.time()
+            return True 
+        return False
+
+    #const delay
     def api_call_delay(self, x):
         for i in range(x):
             time.sleep(self.API_ALLOWED_CALL_TIME)
@@ -42,8 +52,6 @@ class TimeManager:
     def main_cycle_delay(self, algtime):
         if algtime<self.API_ALLOWED_CALL_TIME:
             time.sleep(self.API_ALLOWED_CALL_TIME-algtime)
-
-
 
     #datetime
     def get_current_time(self):

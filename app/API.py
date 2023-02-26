@@ -5,6 +5,7 @@ class API:
         self.last_sellups_link = "https://monopoly-one.com/api/market.getLastSellups?count={}"
         self.last_item_listings_link = "https://monopoly-one.com/api/market.getListing?thing_prototype_id={}&count={}"
         self.buy_item_link = "https://monopoly-one.com/api/market.buy"
+        self.sell_item_link = "https://monopoly-one.com/api/market.sell"
         self.get_balance_link = "https://monopoly-one.com/api/execute.wallet"
         self.get_walle_history_link = "https://monopoly-one.com/api/wallet.getHistory"
         self.refresh_access_token_link = "https://monopoly-one.com/api/auth.refresh"
@@ -18,8 +19,8 @@ class API:
         self.c+=1
         response = session.get(self.last_sellups_link.format(count)).json()
         if response['code'] == 0:
-            return s
-            
+            return response
+
         else:
             print(s['code'] ,s)
        
@@ -32,6 +33,10 @@ class API:
         self.c+=1
         return session.post(self.buy_item_link, params).json()
     
+    def sell_item(self, session, params):
+        self.c+=1
+        return session.post(self.sell_item_link, params).json()
+
     def get_account_balance(self, session, acc_tok):
         self.c+=1
         params= {'access_token':acc_tok}
