@@ -15,12 +15,14 @@ class API:
    
 
     def get_last_sellups(self, session, count):
-        s = session.get(self.last_sellups_link.format(count)).json()
-        if s['code'] != 0:
-            print(s['code'] ,s)
-
         self.c+=1
-        return s
+        response = session.get(self.last_sellups_link.format(count)).json()
+        if response['code'] == 0:
+            return s
+            
+        else:
+            print(s['code'] ,s)
+       
 
     def get_item_listings(self, session, i_id, count):
         self.c+=1
@@ -45,12 +47,14 @@ class API:
     
     def refresh_access_token(self, session, refresh_token):
         self.c+=1
-        response =session.post(self.refresh_access_token_link, refresh_token).json()
+        params = {'refresh_token': refresh_token}
+        response = session.post(self.refresh_access_token_link, params).json()
 
-        if response['code'] != 0:
-            print(response)
+        if response['code'] == 0:
+            new_access_token = response['data']['access_token']
+            new_refresh_token = response['data']['refresh_token']
 
-        new_access_token = response['data']['access_token']
-        new_refresh_token = response['data']['refresh_token_token']
-        return new_access_token, new_refresh_token   
+            return new_access_token, new_refresh_token
         
+        else:
+            print(response)

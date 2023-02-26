@@ -104,6 +104,8 @@ class TradeBot:
 
         self.refresh_token = self.selenium_handler.return_refresh_token()
 
+        print(self.refresh_token)
+
         self.requests_handler.update_cookie(self.selenium_handler.driver)
 
         self.update_sold_items()
@@ -123,10 +125,16 @@ class TradeBot:
                 start = time.time()
 
                 #API call for sellups 
-                last_50_sellups = self.api_handler.get_last_sellups(self.requests_handler.session, 50)['data']['things']
-            
-                current_item = self.get_item_from_sellup(last_50_sellups[0])
-               
+                try:
+                    last_50_sellups = self.api_handler.get_last_sellups(self.requests_handler.session, 50)['data']['things']
+                
+                    current_item = self.get_item_from_sellup(last_50_sellups[0])
+                except Exception as Ex:
+                    print("Error at the start of cycly", Ex)
+
+                finally:
+                    pass
+
                 #блок закупки последненго предмета
                 if last_checked_item != current_item:
           
@@ -227,6 +235,7 @@ class TradeBot:
                         print(" ")
                         print("Current balance = ", self.balance)
                         print("-----------------------------")
+                        print(" ")
 
                     except Exception as Ex:
                         print("Error while creating report", Ex)
@@ -237,6 +246,7 @@ class TradeBot:
                 #Обновление acces токена
                 if self.time_handler.is_update_token_time():
                     try:
+                        print("------- Updating auth session -------")
                         acc_tok, ref_tok = self.api_handler.refresh_access_token(self.requests_handler.session, self.refresh_token)
                     
                     except Exception as Ex:
@@ -244,7 +254,7 @@ class TradeBot:
                     
                     finally:
                         self.access_token, self.refresh_token = acc_tok, ref_tok
-
+                        print("------ Auth session is successufully updated --------")
                 
 
                 self.time_handler.main_cycle_delay((time.time()-start))

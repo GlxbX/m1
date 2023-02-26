@@ -34,13 +34,12 @@ class Buyer:
             
             else:
                 return [-2, response]
-                print("------------------------------------ Buyer had an unknown error")
-                print(response)
+                
 
         else:
             self.time_handler.api_call_delay(1)
             return [-1, None]
-            print("-------------------Didnt even see item ", id, price)
+           
 
         
 
