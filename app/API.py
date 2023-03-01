@@ -22,7 +22,7 @@ class API:
             return response
 
         else:
-            print(s['code'] ,s)
+            print(response['code'] ,response)
        
 
     def get_item_listings(self, session, i_id, count):
@@ -48,7 +48,9 @@ class API:
         self.c+=1
         response = session.post(self.get_walle_history_link, params).json()
         self.time_handler.api_call_delay(1)
-        return response
+        if response["code"] == 0:
+            return response
+        print(response)
     
     def refresh_access_token(self, session, refresh_token):
         self.c+=1
