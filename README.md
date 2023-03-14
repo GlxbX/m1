@@ -12,6 +12,6 @@ Automated trade bot on game items market
 ### Technologies used:
 * Python
 * SQLlite
-* Selenimu
+* Selenium
 * Requests 
 
