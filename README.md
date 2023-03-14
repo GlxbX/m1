@@ -1,4 +1,4 @@
-# M1 
+# M1 Trade bot
 Automated trade bot on game items market 
 
 
